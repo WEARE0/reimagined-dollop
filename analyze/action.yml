@@ -1,0 +1,46 @@
+name: 'CodeQL: Finish'
+description: 'Finalize CodeQL database'
+author: 'GitHub'
+inputs:
+  check_name:
+    description: The name of the check run to add text to.
+    required: false
+  output:
+    description: The path of the directory in which to save the SARIF results
+    required: false
+    default: '../results'
+  upload:
+    description: Upload the SARIF file
+    required: false
+    default: "true"
+  cleanup-level:
+    description: "Level of cleanup to perform on CodeQL databases at the end of the analyze step. This should either be 'none' to skip cleanup, or be a valid argument for the --mode flag of the CodeQL CLI command 'codeql database cleanup' as documented at https://codeql.github.com/docs/codeql-cli/manual/database-cleanup"
+    required: false
+    default: "brutal"
+  ram:
+    description: Override the amount of memory in MB to be used by CodeQL. By default, almost all the memory of the machine is used.
+    required: false
+  add-snippets:
+    description: Specify whether or not to add code snippets to the output sarif file.
+    required: false
+    default: "false"
+  threads:
+    description: The number of threads to be used by CodeQL.
+    required: false
+  checkout_path:
+    description: "The path at which the analyzed repository was checked out. Used to relativize any absolute paths in the uploaded SARIF file."
+    required: false
+    default: ${{ github.workspace }}
+  category:
+    description: String used by Code Scanning for matching the analyses
+    required: false
+  token:
+    default: ${{ github.token }}
+  matrix:
+    default: ${{ toJson(matrix) }}
+outputs:
+  db-locations:
+    description: A map from language to absolute path for each database created by CodeQL.
+runs:
+  using: 'node12'
+  main: '../lib/analyze-action.js'
