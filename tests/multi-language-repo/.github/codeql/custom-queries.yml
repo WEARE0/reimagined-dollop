@@ -1,0 +1,17 @@
+name: Use custom queries
+
+disable-default-queries: true
+
+queries: 
+  - name: Additional C++ queries
+    uses: github/codeql/cpp/ql/src/codeql-suites/cpp-lgtm.qls@lgtm.com
+  - name: Additional C# queries
+    uses: github/codeql/csharp/ql/src/codeql-suites/csharp-lgtm.qls@lgtm.com
+  - name: Additional Go queries
+    uses: github/codeql-go/ql/src/codeql-suites/go-lgtm.qls@lgtm.com
+  - name: Additional Java queries
+    uses: github/codeql/java/ql/src/codeql-suites/java-lgtm.qls@lgtm.com
+  - name: Additional Javascript queries
+    uses: github/codeql/javascript/ql/src/codeql-suites/javascript-lgtm.qls@lgtm.com
+  - name: Additional Python queries
+    uses: github/codeql/python/ql/src/codeql-suites/python-lgtm.qls@lgtm.com
