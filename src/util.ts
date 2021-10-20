@@ -1,0 +1,167 @@
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
+
+import { Language } from "./languages";
+import { Logger } from "./logging";
+
+/**
+ * Are we running on actions, or not.
+ */
+export type Mode = "actions" | "runner";
+
+/**
+ * The URL for github.com.
+ */
+export const GITHUB_DOTCOM_URL = "https://github.com";
+
+/**
+ * Get the extra options for the codeql commands.
+ */
+export function getExtraOptionsEnvParam(): object {
+  const varName = "CODEQL_ACTION_EXTRA_OPTIONS";
+  const raw = process.env[varName];
+  if (raw === undefined || raw.length === 0) {
+    return {};
+  }
+  try {
+    return JSON.parse(raw);
+  } catch (e) {
+    throw new Error(
+      `${varName} environment variable is set, but does not contain valid JSON: ${e.message}`
+    );
+  }
+}
+
+export function isLocalRun(): boolean {
+  return (
+    !!process.env.CODEQL_LOCAL_RUN &&
+    process.env.CODEQL_LOCAL_RUN !== "false" &&
+    process.env.CODEQL_LOCAL_RUN !== "0"
+  );
+}
+
+/**
+ * Get the array of all the tool names contained in the given sarif contents.
+ *
+ * Returns an array of unique string tool names.
+ */
+export function getToolNames(sarifContents: string): string[] {
+  const sarif = JSON.parse(sarifContents);
+  const toolNames = {};
+
+  for (const run of sarif.runs || []) {
+    const tool = run.tool || {};
+    const driver = tool.driver || {};
+    if (typeof driver.name === "string" && driver.name.length > 0) {
+      toolNames[driver.name] = true;
+    }
+  }
+
+  return Object.keys(toolNames);
+}
+
+// Creates a random temporary directory, runs the given body, and then deletes the directory.
+// Mostly intended for use within tests.
+export async function withTmpDir<T>(
+  body: (tmpDir: string) => Promise<T>
+): Promise<T> {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "codeql-action-"));
+  const realSubdir = path.join(tmpDir, "real");
+  fs.mkdirSync(realSubdir);
+  const symlinkSubdir = path.join(tmpDir, "symlink");
+  fs.symlinkSync(realSubdir, symlinkSubdir, "dir");
+  const result = await body(symlinkSubdir);
+  fs.rmdirSync(tmpDir, { recursive: true });
+  return result;
+}
+
+/**
+ * Get the codeql `--ram` flag as configured by the `ram` input. If no value was
+ * specified, the total available memory will be used minus 256 MB.
+ *
+ * @returns string
+ */
+export function getMemoryFlag(userInput: string | undefined): string {
+  let memoryToUseMegaBytes: number;
+  if (userInput) {
+    memoryToUseMegaBytes = Number(userInput);
+    if (Number.isNaN(memoryToUseMegaBytes) || memoryToUseMegaBytes <= 0) {
+      throw new Error(`Invalid RAM setting "${userInput}", specified.`);
+    }
+  } else {
+    const totalMemoryBytes = os.totalmem();
+    const totalMemoryMegaBytes = totalMemoryBytes / (1024 * 1024);
+    const systemReservedMemoryMegaBytes = 256;
+    memoryToUseMegaBytes = totalMemoryMegaBytes - systemReservedMemoryMegaBytes;
+  }
+  return `--ram=${Math.floor(memoryToUseMegaBytes)}`;
+}
+
+/**
+ * Get the codeql flag to specify whether to add code snippets to the sarif file.
+ *
+ * @returns string
+ */
+export function getAddSnippetsFlag(
+  userInput: string | boolean | undefined
+): string {
+  if (typeof userInput === "string") {
+    // have to process specifically because any non-empty string is truthy
+    userInput = userInput.toLowerCase() === "true";
+  }
+  return userInput ? "--sarif-add-snippets" : "--no-sarif-add-snippets";
+}
+
+/**
+ * Get the codeql `--threads` value specified for the `threads` input.
+ * If not value was specified, all available threads will be used.
+ *
+ * The value will be capped to the number of available CPUs.
+ *
+ * @returns string
+ */
+export function getThreadsFlag(
+  userInput: string | undefined,
+  logger: Logger
+): string {
+  let numThreads: number;
+  const maxThreads = os.cpus().length;
+  if (userInput) {
+    numThreads = Number(userInput);
+    if (Number.isNaN(numThreads)) {
+      throw new Error(`Invalid threads setting "${userInput}", specified.`);
+    }
+    if (numThreads > maxThreads) {
+      logger.info(
+        `Clamping desired number of threads (${numThreads}) to max available (${maxThreads}).`
+      );
+      numThreads = maxThreads;
+    }
+    const minThreads = -maxThreads;
+    if (numThreads < minThreads) {
+      logger.info(
+        `Clamping desired number of free threads (${numThreads}) to max available (${minThreads}).`
+      );
+      numThreads = minThreads;
+    }
+  } else {
+    // Default to using all threads
+    numThreads = maxThreads;
+  }
+  return `--threads=${numThreads}`;
+}
+
+/**
+ * Get the directory where CodeQL databases should be placed.
+ */
+export function getCodeQLDatabasesDir(tempDir: string) {
+  return path.resolve(tempDir, "codeql_databases");
+}
+
+/**
+ * Get the path where the CodeQL database for the given language lives.
+ */
+export function getCodeQLDatabasePath(tempDir: string, language: Language) {
+  return path.resolve(getCodeQLDatabasesDir(tempDir), language);
+}
