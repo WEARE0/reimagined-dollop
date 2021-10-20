@@ -1,0 +1,25 @@
+name: 'Code Scanning : Upload SARIF'
+description: 'Upload the analysis results'
+author: 'GitHub'
+inputs:
+  sarif_file:
+    description: The SARIF file or directory of SARIF files to be uploaded. Each upload should contain a maximum of 1000 results, any additional results are ignored.
+    required: false
+    default: '../results'
+  checkout_path:
+    description: "The path at which the analyzed repository was checked out. Used to relativize any absolute paths in the uploaded SARIF file."
+    required: false
+    default: ${{ github.workspace }}
+  token:
+    default: ${{ github.token }}
+  matrix:
+    default: ${{ toJson(matrix) }}
+  category:
+    description: String used by Code Scanning for matching the analyses
+    required: false
+  wait-for-processing:
+    description: If true, the Action will wait for the uploaded SARIF to be processed before completing.
+    required: false
+runs:
+  using: 'node12'
+  main: '../lib/upload-sarif-action.js'
