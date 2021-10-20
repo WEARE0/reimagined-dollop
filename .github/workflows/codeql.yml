@@ -1,0 +1,21 @@
+name: "CodeQL action"
+
+on:
+  push:
+    branches: [main, v1]
+  pull_request:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest,windows-latest,macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ./init
+      with:
+        languages: javascript
+        config-file: ./.github/codeql/codeql-config.yml
+    - uses: ./analyze
