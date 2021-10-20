@@ -1,0 +1,55 @@
+name: 'CodeQL: Init'
+description: 'Set up CodeQL'
+author: 'GitHub'
+inputs:
+  tools:
+    description: URL of CodeQL tools
+    required: false
+    # If not specified the Action will check in several places until it finds the CodeQL tools.
+  languages:
+    description: The languages to be analysed
+    required: false
+  token:
+    default: ${{ github.token }}
+  matrix:
+    default: ${{ toJson(matrix) }}
+  config-file:
+    description: Path of the config file to use
+    required: false
+  db-location:
+    description: Path where CodeQL databases should be created. If not specified, a temporary directory will be used.
+    required: false
+  queries:
+    description: Comma-separated list of additional queries to run. By default, this overrides the same setting in a configuration file; prefix with "+" to use both sets of queries.
+    required: false
+  packs:
+    description: >-
+      [Experimental] Comma-separated list of packs to run. Reference a pack in the format `scope/name[@version]`. If `version` is not
+      specified, then the latest version of the pack is used. By default, this overrides the same setting in a
+      configuration file; prefix with "+" to use both sets of packs.
+
+      This input is only available in single-language analyses. To use packs in multi-language
+      analyses, you must specify packs in the codeql-config.yml file.
+    required: false
+  external-repository-token:
+    description: A token for fetching external config files and queries if they reside in a private repository.
+    required: false
+  setup-python-dependencies:
+    description: Try to auto-install your python dependencies
+    required: true
+    default: 'true'
+  source-root:
+    description: Path of the root source code directory, relative to $GITHUB_WORKSPACE.
+    required: false
+  ram:
+    description: Override the amount of memory in MB to be used by CodeQL extractors. By default, almost all the memory of the machine is used.
+    required: false
+  threads:
+    description: The number of threads to be used by CodeQL extractors.
+    required: false
+outputs:
+  codeql-path:
+    description: The path of the CodeQL binary used for analysis
+runs:
+  using: 'node12'
+  main: '../lib/init-action.js'
