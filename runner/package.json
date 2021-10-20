@@ -1,0 +1,17 @@
+{
+  "name": "codeql-runner",
+  "version": "1.0.20",
+  "private": true,
+  "description": "CodeQL runner",
+  "scripts": {
+    "build-runner": "webpack --mode production && pkg dist/codeql-runner.js  --out-path dist"
+  },
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "pkg": "^5.3.1",
+    "ts-loader": "9.2.5",
+    "webpack": "^5.50.0",
+    "webpack-cli": "^4.7.2"
+  }
+}
